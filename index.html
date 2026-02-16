@@ -785,9 +785,15 @@
                 </div>
 
                 <div id="restauration_details" style="display: none;">
-                    <div class="form-group">
-                        <label><span class="optional">(Optionnel)</span> Tarif moyen par personne (DZD)</label>
-                        <input type="number" name="restauration_tarif" placeholder="Ex: 2500">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><span class="optional">(Optionnel)</span> Tarif adulte (DZD)</label>
+                            <input type="number" name="restauration_tarif_adulte" placeholder="Ex: 2500">
+                        </div>
+                        <div class="form-group">
+                            <label><span class="optional">(Optionnel)</span> Tarif enfant (DZD)</label>
+                            <input type="number" name="restauration_tarif_enfant" placeholder="Ex: 1500">
+                        </div>
                     </div>
                 </div>
 
@@ -953,8 +959,8 @@
                 details.style.display = 'block';
             } else {
                 details.style.display = 'none';
-                const input = details.querySelector('input');
-                if (input) input.value = '';
+                const inputs = details.querySelectorAll('input');
+                inputs.forEach(input => input.value = '');
             }
         }
 
