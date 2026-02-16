@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription Hôtel - Nreservi Pro</title>
+    <!-- Google Maps API -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC9AholNhSGSUghn98k5wbbgvTZu7UESbs&callback=initMap"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .form-section {
+            padding: 40px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .required::after {
+            content: " *";
+            color: #e74c3c;
+        }
+
+        .optional {
+            color: #999;
+            font-weight: normal;
+            font-size: 13px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .success-message {
+            display: none;
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error-message {
+            display: none;
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
+        #map {
+            width: 100%;
+            height: 400px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .chambre-details {
+            display: none;
+        }
+
+        .btn-add {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .btn-add:hover {
+            background: #5568d3;
+        }
+
+        .btn-remove {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                margin: 20px auto;
+            }
+            
+            .form-section {
+                padding: 20px;
+            }
+
+            #map {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏨 Inscription Hôtel</h1>
+            <p>Rejoignez le réseau Nreservi Pro et boostez vos réservations</p>
+        </div>
+
+        <div class="form-section">
+            <div class="success-message" id="successMessage">
+                ✅ Inscription envoyée avec succès ! Vous recevrez un email de confirmation sous peu.
+            </div>
+            <div class="error-message" id="errorMessage"></div>
+
+            <form id="hotelForm">
+                <!-- Section 1: Informations Générales -->
+                <div class="section-title">📋 Informations Générales</div>
+                
+                <div class="form-group">
+                    <label class="required">Nom de l'hôtel</label>
+                    <input type="text" name="nom_hotel" required placeholder="Ex: Hôtel Aurassi">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="required">Ville</label>
+                        <select name="ville" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="Alger">Alger</option>
+                            <option value="Oran">Oran</option>
+                            <option value="Constantine">Constantine</option>
+                            <option value="Annaba">Annaba</option>
+                            <option value="Tlemcen">Tlemcen</option>
+                            <option value="Béjaïa">Béjaïa</option>
+                            <option value="Sétif">Sétif</option>
+                            <option value="Batna">Batna</option>
+                            <option value="Tizi Ouzou">Tizi Ouzou</option>
+                            <option value="Ouargla">Ouargla</option>
+                            <option value="Ghardaïa">Ghardaïa</option>
+                            <option value="Tamanrasset">Tamanrasset</option>
+                            <option value="Blida">Blida</option>
+                            <option value="Jijel">Jijel</option>
+                            <option value="Skikda">Skikda</option>
+                            <option value="Mostaganem">Mostaganem</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required">Catégorie</label>
+                        <select name="categorie" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="5 étoiles">5 étoiles ⭐⭐⭐⭐⭐</option>
+                            <option value="4 étoiles">4 étoiles ⭐⭐⭐⭐</option>
+                            <option value="3 étoiles">3 étoiles ⭐⭐⭐</option>
+                            <option value="2 étoiles">2 étoiles ⭐⭐</option>
+                            <option value="1 étoile">1 étoile ⭐</option>
+                            <option value="Sans catégorie">Sans catégorie</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><span class="optional">(Optionnel)</span> Description</label>
+                    <textarea name="description" placeholder="Décrivez brièvement votre établissement..."></textarea>
+                </div>
+
+                <!-- Section 2: Coordonnées -->
+                <div class="section-title">📍 Coordonnées</div>
+
+                <div class="form-group">
+                    <label class="required">Adresse complète</label>
+                    <input type="text" name="adresse" required placeholder="Ex: 123 Rue Didouche Mourad">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><span class="optional">(Optionnel)</span> Code postal</label>
+                        <input type="text" name="code_postal" placeholder="Ex: 16000">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required">Localisation</label>
+                        <select name="localisation" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="Centre-ville">Centre-ville</option>
+                            <option value="Aéroport">Aéroport</option>
+                            <option value="Zone touristique">Zone touristique</option>
+                            <option value="Périphérie">Périphérie</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Positionnement Google Maps -->
+                <div class="form-group">
+                    <label><span class="optional">(Optionnel)</span> 📍 Positionnement sur Google Maps</label>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 10px;">
+                        Cliquez sur la carte pour placer un marqueur à l'emplacement exact de votre hôtel. 
+                        Cela permettra aux clients de vous localiser facilement.
+                    </p>
+                    <div id="map"></div>
+                    <div style="margin-top: 10px; display: flex; gap: 20px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 13px; color: #666;">Latitude</label>
+                            <input type="text" id="latitude" name="latitude" readonly placeholder="Cliquez sur la carte" style="background: #f5f5f5;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 13px; color: #666;">Longitude</label>
+                            <input type="text" id="longitude" name="longitude" readonly placeholder="Cliquez sur la carte" style="background: #f5f5f5;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="required">Téléphone Commercial</label>
+                        <input type="tel" name="tel_commercial" required placeholder="Ex: 021 XX XX XX">
+                    </div>
+
+                    <div class="form-group">
+                        <label><span class="optional">(Optionnel)</span> Téléphone Réception</label>
+                        <input type="tel" name="tel_reception" placeholder="Ex: 021 XX XX XX">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="required">Email de réservation principal</label>
+                    <input type="email" name="email_reservation" required placeholder="reservation@votre-hotel.dz">
+                </div>
+
+                <div class="form-group">
+                    <label><span class="optional">(Optionnel)</span> Emails de réservation supplémentaires</label>
+                    <div id="emailsContainer">
+                        <input type="email" name="emails_supplementaires[]" placeholder="email2@votre-hotel.dz" style="margin-bottom: 10px;">
+                    </div>
+                    <button type="button" onclick="ajouterEmail()" class="btn-add">
+                        ➕ Ajouter un email
+                    </button>
+                </div>
+
+                <!-- Section 3: Chambres et Tarifs -->
+                <div class="section-title">🛏️ Chambres et Tarifs</div>
+
+                <div class="form-group">
+                    <label class="required">Types de chambres proposées</label>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                        Sélectionnez les types de chambres disponibles. Vous pourrez ensuite saisir les tarifs et capacités pour chaque type.
+                    </p>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="chambres_types[]" value="Single" id="ch_single" onchange="toggleChambreDetails('single')">
+                            <label for="ch_single" style="margin: 0;">Single (1 personne)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="chambres_types[]" value="Double" id="ch_double" onchange="toggleChambreDetails('double')">
+                            <label for="ch_double" style="margin: 0;">Double (2 personnes)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="chambres_types[]" value="Triple" id="ch_triple" onchange="toggleChambreDetails('triple')">
+                            <label for="ch_triple" style="margin: 0;">Triple (3 personnes)</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="chambres_types[]" value="Quadruple" id="ch_quadruple" onchange="toggleChambreDetails('quadruple')">
+                            <label for="ch_quadruple" style="margin: 0;">Quadruple (4 personnes)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Détails Single -->
+                <div id="details_single" class="chambre-details">
+                    <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                        <h4 style="margin-bottom: 15px; color: #667eea;">📋 Détails Chambre Single</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Tarif affiché (DZD/nuit)</label>
+                                <input type="number" name="single_tarif_affiche" placeholder="Ex: 8000">
+                            </div>
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Tarif accordé (DZD/nuit)</label>
+                                <input type="number" name="single_tarif_accorde" placeholder="Ex: 6500">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité min adultes</label>
+                                <input type="number" name="single_capacite_min_adultes" placeholder="Ex: 1">
+                            </div>
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité max adultes</label>
+                                <input type="number" name="single_capacite_max_adultes" placeholder="Ex: 1">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité min enfants</label>
+                                <input type="number" name="single_capacite_min_enfants" placeholder="Ex: 0">
+                            </div>
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité max enfants</label>
+                                <input type="number" name="single_capacite_max_enfants" placeholder="Ex: 1">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="single_lit_supplementaire" id="single_lit_supp" onchange="toggleLitSupp('single')">
+                                <label for="single_lit_supp" style="margin: 0;">Possibilité d'ajouter un lit supplémentaire</label>
+                            </div>
+                        </div>
+                        <div id="single_lit_supp_details" style="display: none; margin-top: 15px; padding: 15px; background: white; border-radius: 8px;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label><span class="optional">(Optionnel)</span> Type de lit supplémentaire</label>
+                                    <select name="single_lit_supp_type">
+                                        <option value="">Sélectionner...</option>
+                                        <option value="Matelas">Matelas</option>
+                                        <option value="Lit pliant">Lit pliant</option>
+                                        <option value="Clic-clac">Clic-clac</option>
+                                        <option value="Canapé-lit">Canapé-lit</option>
+                                        <option value="Lit bébé">Lit bébé</option>
+                                        <option value="Autre">Autre</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label><span class="optional">(Optionnel)</span> Prix du supplément (DZD/nuit)</label>
+                                    <input type="number" name="single_lit_supp_prix" placeholder="Ex: 2000">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Détails Double -->
+                <div id="details_double" class="chambre-details">
+                    <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                        <h4 style="margin-bottom: 15px; color: #667eea;">📋 Détails Chambre Double</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Tarif affiché (DZD/nuit)</label>
+                                <input type="number" name="double_tarif_affiche" placeholder="Ex: 12000">
+                            </div>
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Tarif accordé (DZD/nuit)</label>
+                                <input type="number" name="double_tarif_accorde" placeholder="Ex: 10000">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité min adultes</label>
+                                <input type="number" name="double_capacite_min_adultes" placeholder="Ex: 1">
+                            </div>
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité max adultes</label>
+                                <input type="number" name="double_capacite_max_adultes" placeholder="Ex: 2">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité min enfants</label>
+                                <input type="number" name="double_capacite_min_enfants" placeholder="Ex: 0">
+                            </div>
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité max enfants</label>
+                                <input type="number" name="double_capacite_max_enfants" placeholder="Ex: 2">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="double_lit_supplementaire" id="double_lit_supp" onchange="toggleLitSupp('double')">
+                                <label for="double_lit_supp" style="margin: 0;">Possibilité d'ajouter un lit supplémentaire</label>
+                            </div>
+                        </div>
+                        <div id="double_lit_supp_details" style="display: none; margin-top: 15px; padding: 15px; background: white; border-radius: 8px;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label><span class="optional">(Optionnel)</span> Type de lit supplémentaire</label>
+                                    <select name="double_lit_supp_type">
+                                        <option value="">Sélectionner...</option>
+                                        <option value="Matelas">Matelas</option>
+                                        <option value="Lit pliant">Lit pliant</option>
+                                        <option value="Clic-clac">Clic-clac</option>
+                                        <option value="Canapé-lit">Canapé-lit</option>
+                                        <option value="Lit bébé">Lit bébé</option>
+                                        <option value="Autre">Autre</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label><span class="optional">(Optionnel)</span> Prix du supplément (DZD/nuit)</label>
+                                    <input type="number" name="double_lit_supp_prix" placeholder="Ex: 2000">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Détails Triple -->
+                <div id="details_triple" class="chambre-details">
+                    <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                        <h4 style="margin-bottom: 15px; color: #667eea;">📋 Détails Chambre Triple</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Tarif affiché (DZD/nuit)</label>
+                                <input type="number" name="triple_tarif_affiche" placeholder="Ex: 15000">
+                            </div>
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Tarif accordé (DZD/nuit)</label>
+                                <input type="number" name="triple_tarif_accorde" placeholder="Ex: 12500">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité min adultes</label>
+                                <input type="number" name="triple_capacite_min_adultes" placeholder="Ex: 2">
+                            </div>
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité max adultes</label>
+                                <input type="number" name="triple_capacite_max_adultes" placeholder="Ex: 3">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité min enfants</label>
+                                <input type="number" name="triple_capacite_min_enfants" placeholder="Ex: 0">
+                            </div>
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité max enfants</label>
+                                <input type="number" name="triple_capacite_max_enfants" placeholder="Ex: 2">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="triple_lit_supplementaire" id="triple_lit_supp" onchange="toggleLitSupp('triple')">
+                                <label for="triple_lit_supp" style="margin: 0;">Possibilité d'ajouter un lit supplémentaire</label>
+                            </div>
+                        </div>
+                        <div id="triple_lit_supp_details" style="display: none; margin-top: 15px; padding: 15px; background: white; border-radius: 8px;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label><span class="optional">(Optionnel)</span> Type de lit supplémentaire</label>
+                                    <select name="triple_lit_supp_type">
+                                        <option value="">Sélectionner...</option>
+                                        <option value="Matelas">Matelas</option>
+                                        <option value="Lit pliant">Lit pliant</option>
+                                        <option value="Clic-clac">Clic-clac</option>
+                                        <option value="Canapé-lit">Canapé-lit</option>
+                                        <option value="Lit bébé">Lit bébé</option>
+                                        <option value="Autre">Autre</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label><span class="optional">(Optionnel)</span> Prix du supplément (DZD/nuit)</label>
+                                    <input type="number" name="triple_lit_supp_prix" placeholder="Ex: 2000">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Détails Quadruple -->
+                <div id="details_quadruple" class="chambre-details">
+                    <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                        <h4 style="margin-bottom: 15px; color: #667eea;">📋 Détails Chambre Quadruple</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Tarif affiché (DZD/nuit)</label>
+                                <input type="number" name="quadruple_tarif_affiche" placeholder="Ex: 18000">
+                            </div>
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Tarif accordé (DZD/nuit)</label>
+                                <input type="number" name="quadruple_tarif_accorde" placeholder="Ex: 15000">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité min adultes</label>
+                                <input type="number" name="quadruple_capacite_min_adultes" placeholder="Ex: 2">
+                            </div>
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité max adultes</label>
+                                <input type="number" name="quadruple_capacite_max_adultes" placeholder="Ex: 4">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité min enfants</label>
+                                <input type="number" name="quadruple_capacite_min_enfants" placeholder="Ex: 0">
+                            </div>
+                            <div class="form-group">
+                                <label><span class="optional">(Optionnel)</span> Capacité max enfants</label>
+                                <input type="number" name="quadruple_capacite_max_enfants" placeholder="Ex: 2">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="quadruple_lit_supplementaire" id="quadruple_lit_supp" onchange="toggleLitSupp('quadruple')">
+                                <label for="quadruple_lit_supp" style="margin: 0;">Possibilité d'ajouter un lit supplémentaire</label>
+                            </div>
+                        </div>
+                        <div id="quadruple_lit_supp_details" style="display: none; margin-top: 15px; padding: 15px; background: white; border-radius: 8px;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label><span class="optional">(Optionnel)</span> Type de lit supplémentaire</label>
+                                    <select name="quadruple_lit_supp_type">
+                                        <option value="">Sélectionner...</option>
+                                        <option value="Matelas">Matelas</option>
+                                        <option value="Lit pliant">Lit pliant</option>
+                                        <option value="Clic-clac">Clic-clac</option>
+                                        <option value="Canapé-lit">Canapé-lit</option>
+                                        <option value="Lit bébé">Lit bébé</option>
+                                        <option value="Autre">Autre</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label><span class="optional">(Optionnel)</span> Prix du supplément (DZD/nuit)</label>
+                                    <input type="number" name="quadruple_lit_supp_prix" placeholder="Ex: 2000">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Autres types de chambres -->
+                <div class="form-group">
+                    <label><span class="optional">(Optionnel)</span> Autres types de chambres</label>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 10px;">
+                        Si vous proposez d'autres types de chambres (Suite, Appartement, Familiale, Bungalow, etc.), ajoutez-les ici.
+                    </p>
+                    <div id="autresChambresContainer"></div>
+                    <button type="button" onclick="ajouterAutreChambre()" class="btn-add">
+                        ➕ Ajouter un autre type de chambre
+                    </button>
+                </div>
+
+                <!-- Upload de photos -->
+                <div class="form-group">
+                    <label><span class="optional">(Optionnel)</span> 📸 Photos de l'hôtel</label>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 10px;">
+                        Vous pouvez joindre des photos de vos chambres, façade, espaces communs, etc. (Max 10 photos)
+                    </p>
+                    <input type="file" name="photos[]" multiple accept="image/*" id="photosInput" style="padding: 10px; border: 2px dashed #667eea; border-radius: 8px; width: 100%; background: #f9f9f9;">
+                    <div id="photosPreview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 15px;"></div>
+                </div>
+
+                <!-- Section 4: Politique Enfants -->
+                <div class="section-title">👶 Politique Enfants</div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><span class="optional">(Optionnel)</span> Âge maximum des enfants</label>
+                        <input type="number" name="age_max_enfants" placeholder="Ex: 12">
+                    </div>
+
+                    <div class="form-group">
+                        <label><span class="optional">(Optionnel)</span> Âge des enfants gratuits</label>
+                        <input type="number" name="age_enfants_gratuits" placeholder="Ex: 6">
+                    </div>
+                </div>
+
+                <!-- Section 5: Équipements -->
+                <div class="section-title">🔧 Aménagements et Équipements</div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="WiFi gratuit" id="eq_wifi">
+                            <label for="eq_wifi" style="margin: 0;">WiFi gratuit</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Parking" id="eq_parking">
+                            <label for="eq_parking" style="margin: 0;">Parking</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Restaurant" id="eq_restaurant">
+                            <label for="eq_restaurant" style="margin: 0;">Restaurant</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Piscine" id="eq_piscine">
+                            <label for="eq_piscine" style="margin: 0;">Piscine</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Salle de sport" id="eq_sport">
+                            <label for="eq_sport" style="margin: 0;">Salle de sport</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Spa" id="eq_spa">
+                            <label for="eq_spa" style="margin: 0;">Spa</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Climatisation" id="eq_clim">
+                            <label for="eq_clim" style="margin: 0;">Climatisation</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Bar" id="eq_bar">
+                            <label for="eq_bar" style="margin: 0;">Bar</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Salle de conférence" id="eq_conf">
+                            <label for="eq_conf" style="margin: 0;">Salle de conférence</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Salle de réunion" id="eq_reunion">
+                            <label for="eq_reunion" style="margin: 0;">Salle de réunion</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Cafétéria" id="eq_cafeteria">
+                            <label for="eq_cafeteria" style="margin: 0;">Cafétéria</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Ascenseur" id="eq_ascenseur">
+                            <label for="eq_ascenseur" style="margin: 0;">Ascenseur</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Service de chambre" id="eq_room_service">
+                            <label for="eq_room_service" style="margin: 0;">Service de chambre</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Accès handicapés" id="eq_handicap">
+                            <label for="eq_handicap" style="margin: 0;">Accès handicapés</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="equipements[]" value="Réception 24/7" id="eq_reception">
+                            <label for="eq_reception" style="margin: 0;">Réception 24/7</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    📤 Envoyer l'inscription
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        const form = document.getElementById('hotelForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        const WEBHOOK_URL = 'https://nreservi.app.n8n.cloud/webhook/inscription-hotel';
+
+        let emailCount = 1;
+        let autreChambreCount = 0;
+        let map, marker;
+        let photosCompressed = []; // Stocker les photos compressées
+
+        // Fonction pour compresser une image
+        function compressImage(file, maxWidth = 1200, quality = 0.8) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // Redimensionner si l'image est trop grande
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Convertir en base64 avec compression
+                        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                        
+                        // Calculer la taille de compression
+                        const originalSize = file.size;
+                        const compressedSize = Math.round((compressedBase64.length * 3) / 4);
+                        const compressionRatio = Math.round((1 - compressedSize / originalSize) * 100);
+                        
+                        resolve({
+                            name: file.name,
+                            data: compressedBase64,
+                            originalSize: originalSize,
+                            compressedSize: compressedSize,
+                            compressionRatio: compressionRatio
+                        });
+                    };
+                    
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Initialiser Google Maps
+        function initMap() {
+            const defaultCenter = { lat: 36.7538, lng: 3.0588 }; // Alger par défaut
+            
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: defaultCenter,
+                zoom: 13,
+                mapTypeControl: true,
+                streetViewControl: false
+            });
+
+            map.addListener('click', function(event) {
+                placeMarker(event.latLng);
+            });
+        }
+
+        function placeMarker(location) {
+            if (marker) {
+                marker.setMap(null);
+            }
+
+            marker = new google.maps.Marker({
+                position: location,
+                map: map,
+                draggable: true
+            });
+
+            document.getElementById('latitude').value = location.lat().toFixed(6);
+            document.getElementById('longitude').value = location.lng().toFixed(6);
+
+            marker.addListener('dragend', function(event) {
+                document.getElementById('latitude').value = event.latLng.lat().toFixed(6);
+                document.getElementById('longitude').value = event.latLng.lng().toFixed(6);
+            });
+        }
+
+        function ajouterEmail() {
+            const container = document.getElementById('emailsContainer');
+            const newEmail = document.createElement('input');
+            newEmail.type = 'email';
+            newEmail.name = 'emails_supplementaires[]';
+            newEmail.placeholder = `email${emailCount + 1}@votre-hotel.dz`;
+            newEmail.style.marginBottom = '10px';
+            container.appendChild(newEmail);
+            emailCount++;
+        }
+
+        function toggleChambreDetails(type) {
+            const checkbox = document.getElementById('ch_' + type);
+            const details = document.getElementById('details_' + type);
+            
+            if (checkbox.checked) {
+                details.style.display = 'block';
+            } else {
+                details.style.display = 'none';
+                const inputs = details.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    if (input.type === 'checkbox') {
+                        input.checked = false;
+                    } else {
+                        input.value = '';
+                    }
+                });
+                const litSuppDetails = document.getElementById(type + '_lit_supp_details');
+                if (litSuppDetails) {
+                    litSuppDetails.style.display = 'none';
+                }
+            }
+        }
+
+        function toggleLitSupp(type) {
+            const checkbox = document.getElementById(type + '_lit_supp');
+            const details = document.getElementById(type + '_lit_supp_details');
+            
+            if (checkbox.checked) {
+                details.style.display = 'block';
+            } else {
+                details.style.display = 'none';
+                const inputs = details.querySelectorAll('input, select');
+                inputs.forEach(input => {
+                    input.value = '';
+                });
+            }
+        }
+
+        function ajouterAutreChambre() {
+            autreChambreCount++;
+            const container = document.getElementById('autresChambresContainer');
+            
+            const chambreDiv = document.createElement('div');
+            chambreDiv.className = 'autre-chambre-block';
+            chambreDiv.style.cssText = 'background: #f5f5f5; padding: 20px; border-radius: 10px; margin: 15px 0; position: relative;';
+            chambreDiv.id = `autre_chambre_${autreChambreCount}`;
+            
+            chambreDiv.innerHTML = `
+                <button type="button" onclick="supprimerAutreChambre(${autreChambreCount})" class="btn-remove" style="position: absolute; top: 10px; right: 10px;">
+                    ❌ Supprimer
+                </button>
+                <h4 style="margin-bottom: 15px; color: #667eea;">📋 Autre Type #${autreChambreCount}</h4>
+                
+                <div class="form-group">
+                    <label>Nom du type (Ex: Suite, Appartement, Familiale)</label>
+                    <input type="text" name="autre_chambre_nom[]" placeholder="Ex: Suite Royale" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><span class="optional">(Optionnel)</span> Tarif affiché (DZD/nuit)</label>
+                        <input type="number" name="autre_chambre_tarif_affiche[]" placeholder="Ex: 25000">
+                    </div>
+                    <div class="form-group">
+                        <label><span class="optional">(Optionnel)</span> Tarif accordé (DZD/nuit)</label>
+                        <input type="number" name="autre_chambre_tarif_accorde[]" placeholder="Ex: 20000">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><span class="optional">(Optionnel)</span> Capacité min adultes</label>
+                        <input type="number" name="autre_chambre_capacite_min_adultes[]" placeholder="Ex: 2">
+                    </div>
+                    <div class="form-group">
+                        <label><span class="optional">(Optionnel)</span> Capacité max adultes</label>
+                        <input type="number" name="autre_chambre_capacite_max_adultes[]" placeholder="Ex: 4">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><span class="optional">(Optionnel)</span> Capacité min enfants</label>
+                        <input type="number" name="autre_chambre_capacite_min_enfants[]" placeholder="Ex: 0">
+                    </div>
+                    <div class="form-group">
+                        <label><span class="optional">(Optionnel)</span> Capacité max enfants</label>
+                        <input type="number" name="autre_chambre_capacite_max_enfants[]" placeholder="Ex: 2">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" name="autre_chambre_lit_supp[]" id="autre_lit_supp_${autreChambreCount}" onchange="toggleAutreLitSupp(${autreChambreCount})">
+                        <label for="autre_lit_supp_${autreChambreCount}" style="margin: 0;">Possibilité d'ajouter un lit supplémentaire</label>
+                    </div>
+                </div>
+                
+                <div id="autre_lit_supp_details_${autreChambreCount}" style="display: none; margin-top: 15px; padding: 15px; background: white; border-radius: 8px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><span class="optional">(Optionnel)</span> Type de lit supplémentaire</label>
+                            <select name="autre_chambre_lit_supp_type[]">
+                                <option value="">Sélectionner...</option>
+                                <option value="Matelas">Matelas</option>
+                                <option value="Lit pliant">Lit pliant</option>
+                                <option value="Clic-clac">Clic-clac</option>
+                                <option value="Canapé-lit">Canapé-lit</option>
+                                <option value="Lit bébé">Lit bébé</option>
+                                <option value="Autre">Autre</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><span class="optional">(Optionnel)</span> Prix du supplément (DZD/nuit)</label>
+                            <input type="number" name="autre_chambre_lit_supp_prix[]" placeholder="Ex: 3000">
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(chambreDiv);
+        }
+
+        function toggleAutreLitSupp(id) {
+            const checkbox = document.getElementById(`autre_lit_supp_${id}`);
+            const details = document.getElementById(`autre_lit_supp_details_${id}`);
+            
+            if (checkbox.checked) {
+                details.style.display = 'block';
+            } else {
+                details.style.display = 'none';
+            }
+        }
+
+        function supprimerAutreChambre(id) {
+            const chambreDiv = document.getElementById(`autre_chambre_${id}`);
+            if (chambreDiv) {
+                chambreDiv.remove();
+            }
+        }
+
+        // Preview photos avec compression automatique
+        document.getElementById('photosInput').addEventListener('change', async function(e) {
+            const preview = document.getElementById('photosPreview');
+            preview.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #667eea;">⏳ Compression des photos en cours...</div>';
+            
+            photosCompressed = []; // Réinitialiser
+            const files = Array.from(e.target.files).slice(0, 10);
+            
+            // Compresser toutes les photos
+            for (let i = 0; i < files.length; i++) {
+                try {
+                    const compressed = await compressImage(files[i]);
+                    photosCompressed.push(compressed);
+                } catch (error) {
+                    console.error('Erreur compression photo:', error);
+                    photosCompressed.push({
+                        name: files[i].name,
+                        data: null,
+                        error: true
+                    });
+                }
+            }
+            
+            // Afficher le preview
+            preview.innerHTML = '';
+            photosCompressed.forEach((photo, index) => {
+                const div = document.createElement('div');
+                div.style.cssText = 'position: relative; border-radius: 8px; overflow: hidden; border: 2px solid #e0e0e0;';
+                
+                if (photo.error) {
+                    div.innerHTML = `
+                        <div style="background: #f8d7da; padding: 20px; text-align: center; color: #721c24;">
+                            ❌ Erreur
+                        </div>
+                    `;
+                } else {
+                    const sizeText = photo.compressionRatio > 0 
+                        ? `${Math.round(photo.compressedSize / 1024)}KB (${photo.compressionRatio}% de compression)`
+                        : `${Math.round(photo.compressedSize / 1024)}KB`;
+                    
+                    div.innerHTML = `
+                        <img src="${photo.data}" style="width: 100%; height: 150px; object-fit: cover;">
+                        <div style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); color: white; padding: 3px 8px; border-radius: 5px; font-size: 12px;">
+                            ${index + 1}
+                        </div>
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 11px; text-align: center;">
+                            ${sizeText}
+                        </div>
+                    `;
+                }
+                preview.appendChild(div);
+            });
+
+            if (e.target.files.length > 10) {
+                alert('Maximum 10 photos. Seules les 10 premières seront prises en compte.');
+            }
+        });
+
+        // Soumission du formulaire
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Envoi en cours...';
+            
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+
+            const formData = new FormData(form);
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (key === 'photos[]') {
+                    continue;
+                }
+                if (key.includes('[]')) {
+                    const cleanKey = key.replace('[]', '');
+                    if (!data[cleanKey]) data[cleanKey] = [];
+                    data[cleanKey].push(value);
+                } else {
+                    data[key] = value;
+                }
+            }
+
+            if (data.chambres_types) data.chambres_types = data.chambres_types.join(', ');
+            if (data.equipements) data.equipements = data.equipements.join(', ');
+            if (data.emails_supplementaires) data.emails_supplementaires = data.emails_supplementaires.filter(e => e).join(', ');
+
+            // Organiser les chambres
+            const chambres = [];
+            const typesStandards = ['single', 'double', 'triple', 'quadruple'];
+            
+            typesStandards.forEach(type => {
+                if (document.getElementById(`ch_${type}`)?.checked) {
+                    const chambre = {
+                        type: type.charAt(0).toUpperCase() + type.slice(1),
+                        tarif_affiche: data[`${type}_tarif_affiche`] || '',
+                        tarif_accorde: data[`${type}_tarif_accorde`] || '',
+                        capacite_min_adultes: data[`${type}_capacite_min_adultes`] || '',
+                        capacite_max_adultes: data[`${type}_capacite_max_adultes`] || '',
+                        capacite_min_enfants: data[`${type}_capacite_min_enfants`] || '',
+                        capacite_max_enfants: data[`${type}_capacite_max_enfants`] || '',
+                        lit_supplementaire: data[`${type}_lit_supplementaire`] === 'on'
+                    };
+
+                    if (chambre.lit_supplementaire) {
+                        chambre.lit_supp_type = data[`${type}_lit_supp_type`] || '';
+                        chambre.lit_supp_prix = data[`${type}_lit_supp_prix`] || '';
+                    }
+
+                    chambres.push(chambre);
+                }
+            });
+
+            // Autres chambres
+            if (data.autre_chambre_nom) {
+                const autresNoms = Array.isArray(data.autre_chambre_nom) ? data.autre_chambre_nom : [data.autre_chambre_nom];
+                const autresLitSupp = Array.isArray(data.autre_chambre_lit_supp) ? data.autre_chambre_lit_supp : (data.autre_chambre_lit_supp ? [data.autre_chambre_lit_supp] : []);
+                
+                autresNoms.forEach((nom, index) => {
+                    if (nom) {
+                        const chambre = {
+                            type: nom,
+                            tarif_affiche: Array.isArray(data.autre_chambre_tarif_affiche) ? data.autre_chambre_tarif_affiche[index] : data.autre_chambre_tarif_affiche || '',
+                            tarif_accorde: Array.isArray(data.autre_chambre_tarif_accorde) ? data.autre_chambre_tarif_accorde[index] : data.autre_chambre_tarif_accorde || '',
+                            capacite_min_adultes: Array.isArray(data.autre_chambre_capacite_min_adultes) ? data.autre_chambre_capacite_min_adultes[index] : data.autre_chambre_capacite_min_adultes || '',
+                            capacite_max_adultes: Array.isArray(data.autre_chambre_capacite_max_adultes) ? data.autre_chambre_capacite_max_adultes[index] : data.autre_chambre_capacite_max_adultes || '',
+                            capacite_min_enfants: Array.isArray(data.autre_chambre_capacite_min_enfants) ? data.autre_chambre_capacite_min_enfants[index] : data.autre_chambre_capacite_min_enfants || '',
+                            capacite_max_enfants: Array.isArray(data.autre_chambre_capacite_max_enfants) ? data.autre_chambre_capacite_max_enfants[index] : data.autre_chambre_capacite_max_enfants || '',
+                            lit_supplementaire: autresLitSupp.includes('on')
+                        };
+
+                        if (chambre.lit_supplementaire) {
+                            chambre.lit_supp_type = Array.isArray(data.autre_chambre_lit_supp_type) ? data.autre_chambre_lit_supp_type[index] : data.autre_chambre_lit_supp_type || '';
+                            chambre.lit_supp_prix = Array.isArray(data.autre_chambre_lit_supp_prix) ? data.autre_chambre_lit_supp_prix[index] : data.autre_chambre_lit_supp_prix || '';
+                        }
+
+                        chambres.push(chambre);
+                    }
+                });
+            }
+
+            data.chambres_details = chambres;
+
+            // Nettoyer
+            typesStandards.forEach(type => {
+                delete data[`${type}_tarif_affiche`];
+                delete data[`${type}_tarif_accorde`];
+                delete data[`${type}_capacite_min_adultes`];
+                delete data[`${type}_capacite_max_adultes`];
+                delete data[`${type}_capacite_min_enfants`];
+                delete data[`${type}_capacite_max_enfants`];
+                delete data[`${type}_lit_supplementaire`];
+                delete data[`${type}_lit_supp_type`];
+                delete data[`${type}_lit_supp_prix`];
+            });
+
+            // Photos compressées (déjà prêtes)
+            if (photosCompressed.length > 0) {
+                data.photos = photosCompressed.filter(p => !p.error).map(p => ({
+                    name: p.name,
+                    data: p.data
+                }));
+            }
+
+            try {
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    successMessage.style.display = 'block';
+                    form.reset();
+                    document.getElementById('emailsContainer').innerHTML = '<input type="email" name="emails_supplementaires[]" placeholder="email2@votre-hotel.dz" style="margin-bottom: 10px;">';
+                    document.getElementById('autresChambresContainer').innerHTML = '';
+                    document.getElementById('photosPreview').innerHTML = '';
+                    emailCount = 1;
+                    autreChambreCount = 0;
+                    photosCompressed = [];
+                    document.querySelectorAll('.chambre-details').forEach(el => el.style.display = 'none');
+                    if (marker) {
+                        marker.setMap(null);
+                        marker = null;
+                    }
+                    document.getElementById('latitude').value = '';
+                    document.getElementById('longitude').value = '';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    throw new Error('Erreur lors de l\'envoi');
+                }
+            } catch (error) {
+                errorMessage.textContent = '❌ Erreur lors de l\'envoi. Veuillez réessayer ou nous contacter à contact@nreservi.com';
+                errorMessage.style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '📤 Envoyer l\'inscription';
+            }
+        });
+    </script>
+</body>
+</html>

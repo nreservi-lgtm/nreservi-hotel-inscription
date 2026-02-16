@@ -1,0 +1,319 @@
+{
+  "name": "Nreservi - Inscription Hotel Automatique",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inscription-hotel",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "webhook-node",
+      "name": "Webhook - Formulaire Soumis",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "inscription-hotel"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validation et formatting des données du formulaire\nconst data = $input.item.json;\n\nconsole.log('Données reçues:', data);\n\n// Vérifier les champs obligatoires\nconst required = [\n  'nom_hotel',\n  'ville',\n  'categorie',\n  'adresse',\n  'localisation',\n  'tel_commercial',\n  'email_reservation',\n  'tarif_affiche',\n  'tarif_accorde'\n];\n\nfor (const field of required) {\n  if (!data[field] || data[field] === '') {\n    throw new Error(`Champ obligatoire manquant: ${field}`);\n  }\n}\n\n// Nettoyer et formater les données\nconst cleanData = {\n  // Informations générales\n  nom_hotel: data.nom_hotel.trim(),\n  ville: data.ville,\n  categorie: data.categorie,\n  description: data.description ? data.description.trim() : '',\n  \n  // Coordonnées\n  adresse: data.adresse.trim(),\n  code_postal: data.code_postal || '',\n  localisation: data.localisation,\n  tel_commercial: data.tel_commercial.replace(/\\s/g, ''),\n  tel_reception: data.tel_reception ? data.tel_reception.replace(/\\s/g, '') : '',\n  email_reservation: data.email_reservation.toLowerCase().trim(),\n  \n  // Chambres et tarifs\n  chambres: data.chambres || '',\n  tarif_affiche: parseInt(data.tarif_affiche),\n  tarif_accorde: parseInt(data.tarif_accorde),\n  age_max_enfants: data.age_max_enfants ? parseInt(data.age_max_enfants) : null,\n  age_enfants_gratuits: data.age_enfants_gratuits ? parseInt(data.age_enfants_gratuits) : null,\n  \n  // Équipements\n  equipements: data.equipements || '',\n  \n  // Métadonnées\n  date_inscription: new Date().toISOString(),\n  statut: 'En attente de validation',\n  source: 'Formulaire Web'\n};\n\n// Validation du tarif\nif (cleanData.tarif_accorde > cleanData.tarif_affiche) {\n  throw new Error('Le tarif accordé ne peut pas être supérieur au tarif affiché');\n}\n\nconsole.log('Données nettoyées:', cleanData);\n\nreturn { json: cleanData };"
+      },
+      "id": "validation-node",
+      "name": "Validation & Formatting",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=cd /home/node/hotel_creator && python3 hotel_creator.py '{{ JSON.stringify($json) }}'"
+      },
+      "id": "python-script-node",
+      "name": "Execute Python - Création Hôtel",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parser le résultat du script Python\nconst output = $input.item.json.stdout || '{}';\n\ntry {\n  const result = JSON.parse(output);\n  \n  // Combiner avec les données originales\n  return {\n    json: {\n      ...result,\n      hotel_data: $('Validation & Formatting').item.json\n    }\n  };\n} catch (error) {\n  console.error('Erreur parsing Python output:', error);\n  return {\n    json: {\n      success: false,\n      error: error.message,\n      hotel_data: $('Validation & Formatting').item.json\n    }\n  };\n}"
+      },
+      "id": "parse-result-node",
+      "name": "Parser Résultat Python",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,\n      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.success }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-success-node",
+      "name": "Vérifier Succès",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "sendTo": "={{ $json.hotel_data.email_reservation }}",
+        "subject": "✅ Inscription confirmée sur Nreservi Pro",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }\n    .content { background: #f9f9f9; padding: 30px; }\n    .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }\n    .info-item { margin: 10px 0; }\n    .label { font-weight: bold; color: #667eea; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>✅ Inscription Confirmée !</h1>\n    </div>\n    <div class=\"content\">\n      <p>Bonjour,</p>\n      \n      <p>Nous sommes ravis de vous confirmer que votre établissement <strong>\"{{ $json.hotel_data.nom_hotel }}\"</strong> a été enregistré avec succès sur la plateforme Nreservi Pro !</p>\n      \n      <div class=\"info-box\">\n        <h3 style=\"color: #667eea; margin-top: 0;\">📋 Informations enregistrées</h3>\n        <div class=\"info-item\"><span class=\"label\">Nom:</span> {{ $json.hotel_data.nom_hotel }}</div>\n        <div class=\"info-item\"><span class=\"label\">Ville:</span> {{ $json.hotel_data.ville }}</div>\n        <div class=\"info-item\"><span class=\"label\">Catégorie:</span> {{ $json.hotel_data.categorie }}</div>\n        <div class=\"info-item\"><span class=\"label\">Localisation:</span> {{ $json.hotel_data.localisation }}</div>\n        <div class=\"info-item\"><span class=\"label\">Email:</span> {{ $json.hotel_data.email_reservation }}</div>\n      </div>\n      \n      <h3 style=\"color: #667eea;\">📌 Prochaines étapes</h3>\n      <ol>\n        <li>Notre équipe va finaliser la configuration de votre fiche (localisation GPS précise et photos)</li>\n        <li>Vous recevrez un nouvel email dès que votre établissement sera en ligne</li>\n        <li><strong>Délai estimé: 48-72 heures ouvrées</strong></li>\n      </ol>\n      \n      <div style=\"background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;\">\n        <h4 style=\"margin-top: 0; color: #856404;\">💡 Pendant ce temps</h4>\n        <ul style=\"margin: 10px 0; color: #856404;\">\n          <li>Préparez vos meilleures photos d'hôtel (chambres, façade, espaces communs)</li>\n          <li>Vérifiez vos disponibilités pour les prochains mois</li>\n          <li>Pensez aux offres promotionnelles que vous souhaitez proposer</li>\n        </ul>\n      </div>\n      \n      <h3 style=\"color: #667eea;\">📞 Besoin d'aide ?</h3>\n      <p>N'hésitez pas à nous contacter :</p>\n      <ul>\n        <li>Email: <a href=\"mailto:contact@nreservi.com\" style=\"color: #667eea;\">contact@nreservi.com</a></li>\n        <li>Tél: [VOTRE NUMERO]</li>\n      </ul>\n      \n      <p style=\"margin-top: 30px;\">Merci de votre confiance et bienvenue sur Nreservi Pro !</p>\n      \n      <p><strong>Cordialement,</strong><br>\nL'équipe Nreservi</p>\n      \n      <hr style=\"margin: 30px 0; border: none; border-top: 1px solid #ddd;\">\n      <p style=\"font-size: 12px; color: #999; text-align: center;\">Cet email a été envoyé automatiquement. Merci de ne pas y répondre directement.</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "email-hotelier-success",
+      "name": "Email Confirmation - Hôtelier",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        200
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "sendTo": "admin@nreservi.com",
+        "subject": "=🏨 Nouveau hôtel à valider: {{ $json.hotel_data.nom_hotel }}",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n    .header { background: #667eea; color: white; padding: 20px; border-radius: 8px 8px 0 0; }\n    .content { background: #f9f9f9; padding: 20px; }\n    .section { background: white; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #667eea; }\n    .label { font-weight: bold; color: #667eea; display: inline-block; width: 180px; }\n    .todo { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }\n    .checkbox { margin: 5px 0; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h2 style=\"margin: 0;\">🏨 Nouveau Hôtel à Valider</h2>\n    </div>\n    <div class=\"content\">\n      <div class=\"section\">\n        <h3 style=\"margin-top: 0; color: #667eea;\">📋 INFORMATIONS GÉNÉRALES</h3>\n        <div><span class=\"label\">Nom:</span> {{ $json.hotel_data.nom_hotel }}</div>\n        <div><span class=\"label\">Ville:</span> {{ $json.hotel_data.ville }}</div>\n        <div><span class=\"label\">Catégorie:</span> {{ $json.hotel_data.categorie }}</div>\n        <div><span class=\"label\">Localisation:</span> {{ $json.hotel_data.localisation }}</div>\n        {{ $json.hotel_data.description ? '<div><span class=\"label\">Description:</span> ' + $json.hotel_data.description + '</div>' : '' }}\n      </div>\n      \n      <div class=\"section\">\n        <h3 style=\"margin-top: 0; color: #667eea;\">📍 COORDONNÉES</h3>\n        <div><span class=\"label\">Adresse:</span> {{ $json.hotel_data.adresse }}</div>\n        {{ $json.hotel_data.code_postal ? '<div><span class=\"label\">Code postal:</span> ' + $json.hotel_data.code_postal + '</div>' : '' }}\n        <div><span class=\"label\">Tél commercial:</span> {{ $json.hotel_data.tel_commercial }}</div>\n        {{ $json.hotel_data.tel_reception ? '<div><span class=\"label\">Tél réception:</span> ' + $json.hotel_data.tel_reception + '</div>' : '' }}\n        <div><span class=\"label\">Email:</span> <a href=\"mailto:{{ $json.hotel_data.email_reservation }}\">{{ $json.hotel_data.email_reservation }}</a></div>\n      </div>\n      \n      <div class=\"section\">\n        <h3 style=\"margin-top: 0; color: #667eea;\">🛏️ CHAMBRES & TARIFS</h3>\n        <div><span class=\"label\">Types de chambres:</span> {{ $json.hotel_data.chambres || 'Non spécifié' }}</div>\n        <div><span class=\"label\">Tarif affiché:</span> {{ $json.hotel_data.tarif_affiche }} DZD</div>\n        <div><span class=\"label\">Tarif accordé:</span> {{ $json.hotel_data.tarif_accorde }} DZD</div>\n        {{ $json.hotel_data.age_max_enfants ? '<div><span class=\"label\">Âge max enfants:</span> ' + $json.hotel_data.age_max_enfants + ' ans</div>' : '' }}\n        {{ $json.hotel_data.age_enfants_gratuits ? '<div><span class=\"label\">Enfants gratuits:</span> Jusqu\\'à ' + $json.hotel_data.age_enfants_gratuits + ' ans</div>' : '' }}\n      </div>\n      \n      {{ $json.hotel_data.equipements ? '<div class=\"section\"><h3 style=\"margin-top: 0; color: #667eea;\">🔧 ÉQUIPEMENTS</h3><div>' + $json.hotel_data.equipements + '</div></div>' : '' }}\n      \n      <div class=\"todo\">\n        <h3 style=\"margin-top: 0; color: #856404;\">⚠️ À COMPLÉTER MANUELLEMENT</h3>\n        <div class=\"checkbox\">☐ Localisation GPS précise</div>\n        <div class=\"checkbox\">☐ Photos de l'établissement (min 5)</div>\n        <div class=\"checkbox\">☐ Vérification des informations</div>\n        <div class=\"checkbox\">☐ Configuration des tarifs saisonniers</div>\n        <div class=\"checkbox\">☐ Mise en ligne finale</div>\n      </div>\n      \n      {{ $json.hotel_id ? '<div style=\"text-align: center; margin: 30px 0;\"><a href=\"https://www.nreservi.pro/cr.admin/hotels/' + $json.hotel_id + '\" style=\"display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;\">🔗 Accéder à la fiche</a></div>' : '' }}\n      \n      <hr style=\"margin: 30px 0; border: none; border-top: 1px solid #ddd;\">\n      <div style=\"font-size: 13px; color: #666;\">\n        <div><strong>Date d'inscription:</strong> {{ $json.hotel_data.date_inscription }}</div>\n        <div><strong>Source:</strong> {{ $json.hotel_data.source }}</div>\n      </div>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "email-admin-success",
+      "name": "Email Notification - Admin",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        400
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "sendTo": "={{ $json.hotel_data.email_reservation }}",
+        "subject": "⚠️ Problème avec votre inscription - Nreservi Pro",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n    .header { background: #dc3545; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }\n    .content { background: #f9f9f9; padding: 30px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>⚠️ Problème Temporaire</h1>\n    </div>\n    <div class=\"content\">\n      <p>Bonjour,</p>\n      \n      <p>Nous avons bien reçu votre demande d'inscription pour <strong>\"{{ $json.hotel_data.nom_hotel }}\"</strong>, mais nous avons rencontré un problème technique lors du traitement automatique.</p>\n      \n      <div style=\"background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;\">\n        <h4 style=\"margin-top: 0; color: #856404;\">❌ Erreur rencontrée</h4>\n        <p style=\"color: #856404; margin: 0;\">{{ $json.error || 'Erreur technique temporaire' }}</p>\n      </div>\n      \n      <p><strong>Pas d'inquiétude !</strong> Notre équipe technique a été notifiée automatiquement et va traiter votre dossier manuellement dans les plus brefs délais.</p>\n      \n      <p>Vous recevrez un email de confirmation de notre part dans les <strong>24-48 heures</strong>.</p>\n      \n      <h3 style=\"color: #667eea;\">📞 Besoin d'aide immédiate ?</h3>\n      <p>N'hésitez pas à nous contacter :</p>\n      <ul>\n        <li>Email: <a href=\"mailto:contact@nreservi.com\" style=\"color: #667eea;\">contact@nreservi.com</a></li>\n        <li>Tél: [VOTRE NUMERO]</li>\n      </ul>\n      \n      <p style=\"margin-top: 30px;\">Merci de votre patience et de votre compréhension.</p>\n      \n      <p><strong>Cordialement,</strong><br>\nL'équipe Nreservi</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "email-hotelier-error",
+      "name": "Email Erreur - Hôtelier",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        600
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "sendTo": "admin@nreservi.com",
+        "subject": "=❌ ERREUR - Inscription hôtel: {{ $json.hotel_data.nom_hotel }}",
+        "emailType": "text",
+        "message": "=ERREUR lors de l'inscription automatique d'un hôtel.\n\nINFORMATIONS HÔTEL:\nNom: {{ $json.hotel_data.nom_hotel }}\nVille: {{ $json.hotel_data.ville }}\nEmail: {{ $json.hotel_data.email_reservation }}\n\nERREUR:\n{{ $json.error }}\n\nACTION REQUISE:\nTraiter cette inscription manuellement sur Nreservi Pro.\n\nDONNÉES COMPLÈTES:\n{{ JSON.stringify($json.hotel_data, null, 2) }}",
+        "options": {}
+      },
+      "id": "email-admin-error",
+      "name": "Email Erreur - Admin",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        800
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Formulaire Soumis": {
+      "main": [
+        [
+          {
+            "node": "Validation & Formatting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation & Formatting": {
+      "main": [
+        [
+          {
+            "node": "Execute Python - Création Hôtel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Python - Création Hôtel": {
+      "main": [
+        [
+          {
+            "node": "Parser Résultat Python",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser Résultat Python": {
+      "main": [
+        [
+          {
+            "node": "Vérifier Succès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vérifier Succès": {
+      "main": [
+        [
+          {
+            "node": "Email Confirmation - Hôtelier",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email Notification - Admin",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email Erreur - Hôtelier",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email Erreur - Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Confirmation - Hôtelier": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Notification - Admin": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Erreur - Hôtelier": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Erreur - Admin": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-02-16T00:00:00.000Z",
+  "versionId": "1"
+}
