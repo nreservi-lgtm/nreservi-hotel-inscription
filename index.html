@@ -1236,6 +1236,17 @@
                 }));
             }
 
+            // Mapper les champs restauration pour l'API
+            if (data.restauration_tarif_adulte) {
+                data.repas_adulte = data.restauration_tarif_adulte;
+                delete data.restauration_tarif_adulte;
+            }
+            if (data.restauration_tarif_enfant) {
+                data.repas_enfant = data.restauration_tarif_enfant;
+                delete data.restauration_tarif_enfant;
+            }
+
+
             try {
                 const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
